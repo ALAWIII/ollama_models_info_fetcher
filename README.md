@@ -1,4 +1,4 @@
-# ollama_models_info_fetcher ![License: MIT](https://img.shields.io/badge/license-MIT-blue) [![ollama_models_info_fetcher on crates.io](https://img.shields.io/crates/v/ollama_models_info_fetcher)](https://crates.io/crates/ollama_models_info_fetcher) [![ollama_models_info_fetcher on docs.rs](https://docs.rs/ollama_models_info_fetcher/badge.svg)](https://docs.rs/ollama_models_info_fetcher)
+# ollama_models_info_fetcher [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE) [![ollama_models_info_fetcher on crates.io](https://img.shields.io/crates/v/ollama_models_info_fetcher)](https://crates.io/crates/ollama_models_info_fetcher) [![ollama_models_info_fetcher on docs.rs](https://docs.rs/ollama_models_info_fetcher/badge.svg)](https://docs.rs/ollama_models_info_fetcher)
 
 ollama model information fetcher.
 
