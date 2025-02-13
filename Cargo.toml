@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["Allawiii <alighraibeh87@gmail.com>"]
 license = "MIT"
 description = "ollama models information fetcher."
+readme = "README.md"
 
 [dependencies]
 reqwest = { version = "0.12.12", features = ["rustls-tls"] }
