@@ -77,7 +77,8 @@ pub async fn fetch_model_info(model_name: &str) -> OResult<Model> {
     let model_page = get_model_page(model_name).await?;
     let summary = get_summary_content(&model_page).unwrap_or("".to_owned());
     let category = get_category(&model_page).unwrap_or(Category::Other);
-    let varients = get_varient(&model_page).unwrap_or_default();
+    let varients =
+        get_varient(get_model_page(&format!("{}/tags", model_name)).await?, 10).unwrap_or_default();
     let readme = get_readme(&model_page).unwrap_or("".to_owned());
 
     Ok(ModelBuilder::new()
