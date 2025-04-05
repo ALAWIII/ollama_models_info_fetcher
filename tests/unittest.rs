@@ -1,7 +1,7 @@
 use std::{fs::File, io::Write};
 
 use ollama_models_info_fetcher::{
-    fetch_all_available_models, fetch_model_info, get_model_page, OResult,
+    fetch_all_available_models, fetch_model_info, get_model_page, Result,
 };
 use scraper::Selector;
 use serde_json::{to_string, to_string_pretty};
@@ -66,7 +66,7 @@ async fn all_models() {
 async fn fetching_model() {
     let info = fetch_model_info("sailor2").await;
     assert!(info.is_ok());
-    //dbg!(&info.unwrap());
+    dbg!(&info.unwrap());
 }
 #[tokio::test]
 async fn openhermes_edge() {
@@ -87,7 +87,7 @@ async fn fetching_info_all_models() {
 //------------------------testing json conversions-------------
 
 #[tokio::test]
-async fn json_model() -> OResult<()> {
+async fn json_model() -> Result<()> {
     let model = fetch_model_info("goliath").await?;
     let jsona = to_string(&model)?;
     let expected = r#"{"name":"goliath","varients":[{"token_size":"latest","size":"66GB"}],"category":"Other","summary_content":"A language model created by combining two fine-tuned Llama 2 70B models into one.","readme_content":"A large model used by merging the layers of two models: [Xwin](https://ollama.ai/library/xwinlm) and Euryale.\n\n## References\n\n[HuggingFace](https://huggingface.co/alpindale/goliath-120b)"}"#;
@@ -97,7 +97,7 @@ async fn json_model() -> OResult<()> {
 }
 //--------------------
 #[tokio::test]
-async fn write_to_file() -> OResult<()> {
+async fn write_to_file() -> Result<()> {
     let mut f = File::create("./tosn.json")?;
     let model = fetch_model_info("goliath").await?;
     let pretty_json = to_string_pretty(&vec![&model])?;

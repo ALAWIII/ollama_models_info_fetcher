@@ -1,41 +1,46 @@
 //! this functionality is for getting the category or class where the model falls in !!
-
-use crate::{Category, OResult};
-use scraper::{Html, Selector};
+use crate::{anyhow, create_selector, Category, Result};
+use scraper::Html;
 
 /// extracts the model Category : {Tool,Vision ,Embedding,Other}
-pub(super) fn get_category(page: &Html) -> OResult<Category> {
-    let div_id = Selector::parse("div#summary")?;
+pub(super) fn get_category(page: &Html) -> Result<Category> {
+    let div_id = create_selector("div#summary")?;
 
     let div_parent = page
         .select(&div_id)
         .next()
-        .ok_or("element div summary to find category has problem!")?
+        .ok_or("element div summary to find category has problem!")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .parent()
-        .ok_or("failed to get the parent of div#summary element")?;
+        .ok_or("failed to get the parent of div#summary element")
+        .map_err(|e| anyhow!(format!("{e}")))?;
 
     let second_div = div_parent
         .children()
         .filter(|n| n.value().as_element().is_some())
         .nth(1) // the 2nd one is Text("\n\n\t\t")
-        .ok_or("failed to get the second div element that contains the category!!")?;
+        .ok_or("failed to get the second div element that contains the category!!")
+        .map_err(|e| anyhow!(format!("{e}")))?;
     // dbg!(&second_div.value());
     let first_div_of_the_second = second_div
         .children()
         .find(|n| n.value().as_element().is_some())
-        .ok_or("the div element inside category function has problem!")?;
+        .ok_or("the div element inside category function has problem!")
+        .map_err(|e| anyhow!(format!("{e}")))?;
     //dbg!(&first_div_of_the_second.value());
 
     let first_span = first_div_of_the_second
         .children()
         .find(|n| n.value().as_element().is_some())
-        .ok_or("failed to get the first category")?;
+        .ok_or("failed to get the first category")
+        .map_err(|e| anyhow!(format!("{e}")))?;
 
     //dbg!(&first_span.value());
 
     let text = first_span
         .first_child()
-        .ok_or("failed to get the text of span")?
+        .ok_or("failed to get the text of span")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .value()
         .as_text();
     // dbg!(&text);

@@ -1,7 +1,7 @@
-use ollama_models_info_fetcher::{fetch_all_available_models, OResult};
+use ollama_models_info_fetcher::{fetch_all_available_models, Result};
 
 #[tokio::main]
-async fn main() -> OResult<()> {
+async fn main() -> Result<()> {
     // getting all models that are available on the Ollama.com !!!
     let all_models = fetch_all_available_models().await?;
 

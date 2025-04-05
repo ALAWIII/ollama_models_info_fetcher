@@ -1,11 +1,11 @@
 use ollama_models_info_fetcher::{
-    convert_to_json, fetch_all_available_models, fetch_model_info, OResult,
+    convert_to_json, fetch_all_available_models, fetch_model_info, Result,
 };
 
 use std::{fs::File, io::Write};
 
 #[tokio::main]
-async fn main() -> OResult<()> {
+async fn main() -> Result<()> {
     //creating json file to write into!
     let mut f = File::create("./models.json")?;
 

@@ -1,7 +1,4 @@
-use std::{error::Error, fmt::Display};
-
-pub type OResult<T> = Result<T, Box<dyn Error>>;
-
+use std::fmt::Display;
 /// If the model is not found on the official ollama website.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct ModelNotFound(pub String);
@@ -12,4 +9,4 @@ impl Display for ModelNotFound {
     }
 }
 
-impl Error for ModelNotFound {}
+impl std::error::Error for ModelNotFound {}

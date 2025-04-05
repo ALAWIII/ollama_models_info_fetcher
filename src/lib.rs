@@ -29,10 +29,15 @@
 //!```no_run
 #![doc=include_str!("../examples/example4.rs")]
 //!```
-
+pub use anyhow::{anyhow, Result};
 mod errors;
 pub use errors::*;
 mod model_config;
 pub use model_config::*;
 mod utils;
+use scraper::Selector;
 pub use utils::*;
+
+pub(crate) fn create_selector(selector_name: &str) -> Result<Selector> {
+    Selector::parse(selector_name).map_err(|e| anyhow!(format!("Selector parse error: {e}")))
+}

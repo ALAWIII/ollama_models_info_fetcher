@@ -1,28 +1,33 @@
 //! fetching the summary content from the top of a given model page.
 
-use crate::OResult;
-use scraper::{Html, Selector};
+use crate::{anyhow, create_selector, Result};
+use scraper::Html;
 
 /// gets the summary content of a given model page !!!.
-pub(super) fn get_summary_content(page: &Html) -> OResult<String> {
-    let div_id = Selector::parse("div#summary")?;
-    let h2_id = Selector::parse("h2#summary-display")?;
-    let span_id = Selector::parse("span#summary-content")?;
+pub(super) fn get_summary_content(page: &Html) -> Result<String> {
+    let div_id = create_selector("div#summary")?;
+    let h2_id = create_selector("h2#summary-display")?;
+    let span_id = create_selector("span#summary-content")?;
     let content = page
         .select(&div_id)
         .next()
-        .ok_or("element div summary has problem!")?
+        .ok_or("element div summary has problem!")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .select(&h2_id)
         .next()
-        .ok_or("element h2 summary has problem!")?
+        .ok_or("element h2 summary has problem!")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .select(&span_id)
         .next()
-        .ok_or("element span summary has problem!")?
+        .ok_or("element span summary has problem!")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .first_child()
-        .ok_or("no text summary found !")?
+        .ok_or("no text summary found !")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .value()
         .as_text()
-        .ok_or("the first child of span is not text")?
+        .ok_or("the first child of span is not text")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .trim();
 
     Ok(content.into())

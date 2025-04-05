@@ -1,41 +1,47 @@
 //! fetching the tags or varients available of a given model and their acutal sizes.
 use regex::Regex;
 
-use crate::{OResult, Varient};
-use scraper::{Html, Selector};
+use crate::{anyhow, create_selector, Result, Varient};
+use scraper::Html;
 
-pub(super) fn get_varient(page: Html, n_tags: usize) -> OResult<Vec<Varient>> {
+pub(super) fn get_varient(page: Html, n_tags: usize) -> Result<Vec<Varient>> {
     let size_regex = Regex::new(r"(\d+(\.\d+)?(GB|MB|KB))").unwrap();
-    let main_s = Selector::parse("main")?;
-    let section = Selector::parse("section")?;
+    let main_s = create_selector("main")?;
+    let section = create_selector("section")?;
 
-    let list_div = Selector::parse(r#"div.min-w-full.divide-y.divide-gray-200"#)?;
+    let list_div = create_selector(r#"div.min-w-full.divide-y.divide-gray-200"#)?;
     //let div = Selector::parse("div")?;
 
     let tag_div =
-        Selector::parse(r#"div.break-all.font-medium.text-gray-900.group-hover\:underline"#)?;
+        create_selector(r#"div.break-all.font-medium.text-gray-900.group-hover\:underline"#)?;
     let size_div =
-        Selector::parse(r#"div.flex.items-baseline.space-x-1.text-\[13px\].text-neutral-500"#)?;
-    let span_size_div = Selector::parse("span.font-mono")?;
+        create_selector(r#"div.flex.items-baseline.space-x-1.text-\[13px\].text-neutral-500"#)?;
+    let span_size_div = create_selector("span.font-mono")?;
+
     let tags = page
         .select(&main_s)
         .next()
-        .ok_or("Failed to get main element!")? //getting the main element
+        .ok_or("Failed to get main element!")
+        .map_err(|e| anyhow!(format!("{e}")))? //getting the main element
         .select(&section)
         .next()
-        .ok_or("Failed to get section element!")? // successfully getting the section element
+        .ok_or("Failed to get section element!")
+        .map_err(|e| anyhow!(format!("{e}")))? // successfully getting the section element
         .select(&list_div)
         .next()
-        .ok_or("Failed to get the list of divs!")?;
+        .ok_or("Failed to get the list of divs!")
+        .map_err(|e| anyhow!(format!("{e}")))?;
     let token_sizes = tags
         .select(&tag_div)
         .take(n_tags)
-        .map(|t| -> OResult<String> {
+        .map(|t| -> Result<String> {
             Ok(t.first_child()
-                .ok_or("Failed to get the tag child!")?
+                .ok_or("Failed to get the tag child!")
+                .map_err(|e| anyhow!(format!("{e}")))?
                 .value()
                 .as_text()
-                .ok_or("Failed to get the text of tag!")?
+                .ok_or("Failed to get the text of tag!")
+                .map_err(|e| anyhow!(format!("{e}")))?
                 .to_string()
                 .trim()
                 .to_string())
@@ -45,23 +51,28 @@ pub(super) fn get_varient(page: Html, n_tags: usize) -> OResult<Vec<Varient>> {
     let size = tags
         .select(&size_div)
         .take(n_tags)
-        .map(|t| -> OResult<String> {
+        .map(|t| -> Result<String> {
             let t_size = t
                 .select(&span_size_div)
                 .next()
-                .ok_or("Failed to get the span!")?
+                .ok_or("Failed to get the span!")
+                .map_err(|e| anyhow!(format!("{e}")))?
                 .next_sibling()
-                .ok_or("Failed to get the size in GB!")?
+                .ok_or("Failed to get the size in GB!")
+                .map_err(|e| anyhow!(format!("{e}")))?
                 .value()
                 .as_text()
-                .ok_or("Failed to get the text of size!")?
+                .ok_or("Failed to get the text of size!")
+                .map_err(|e| anyhow!(format!("{e}")))?
                 .to_string();
 
             Ok(size_regex
                 .captures(&t_size)
-                .ok_or("Failed to extract the size!")?
+                .ok_or("Failed to extract the size!")
+                .map_err(|e| anyhow!(format!("{e}")))?
                 .get(1)
-                .ok_or("Failed to get the value of size!")?
+                .ok_or("Failed to get the value of size!")
+                .map_err(|e| anyhow!(format!("{e}")))?
                 .as_str()
                 .to_string())
         })
@@ -78,7 +89,7 @@ pub(super) fn get_varient(page: Html, n_tags: usize) -> OResult<Vec<Varient>> {
 
 #[cfg(test)]
 mod varient_test {
-    use crate::{OResult, Varient};
+    use crate::{Result, Varient};
 
     use super::super::get_model_page;
     use super::get_varient;
@@ -103,7 +114,7 @@ mod varient_test {
     }
 
     #[tokio::test]
-    async fn test_get_var2() -> OResult<()> {
+    async fn test_get_var2() -> Result<()> {
         let page = get_model_page("qwen2.5/tags").await?;
         let tags = get_varient(page, 10)?;
         dbg!(tags);

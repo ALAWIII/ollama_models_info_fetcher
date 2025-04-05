@@ -1,19 +1,21 @@
 //! fetches the readme content of a model on the ollama website!
 
-use crate::OResult;
+use crate::{anyhow, create_selector, Result};
 use htmd::convert;
-use scraper::{Html, Selector};
+use scraper::Html;
 
-pub(super) fn get_readme(page: &Html) -> OResult<String> {
-    let div = Selector::parse("div#readme")?;
-    let div_body = Selector::parse("div")?;
+pub(super) fn get_readme(page: &Html) -> Result<String> {
+    let div = create_selector("div#readme")?;
+    let div_body = create_selector("div")?;
     let html_portion = page
         .select(&div)
         .next()
-        .ok_or("Failed to get the readme div element!!")?
+        .ok_or("Failed to get the readme div element!!")
+        .map_err(|e| anyhow!(format!("{e}")))?
         .select(&div_body)
         .nth(1)
-        .ok_or("Failed to get the inner div element of readme")?;
+        .ok_or("Failed to get the inner div element of readme")
+        .map_err(|e| anyhow!(format!("{e}")))?;
     let inner = html_portion.inner_html();
     //dbg!(&inner);
     Ok(convert(&inner)?)

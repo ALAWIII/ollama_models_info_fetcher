@@ -1,12 +1,15 @@
 //! major utils interfaces that will help in getting the right info.
 
 use crate::{
+    create_selector,
     utils::{get_category, get_readme, get_summary_content, get_varient},
-    Category, Model, ModelBuilder, ModelNotFound, OResult,
+    Category, Model, ModelBuilder, ModelNotFound, Result,
 };
+
+use anyhow::anyhow;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Url};
-use scraper::{Html, Selector};
+use scraper::Html;
 use serde::Serialize;
 use serde_json::to_string_pretty;
 use std::sync::Arc;
@@ -14,22 +17,24 @@ static CLIENT: Lazy<Arc<Client>> = Lazy::new(|| Arc::new(Client::new()));
 
 /// returns all available ollama models that are located on :
 /// [Ollama](https://ollama.com/library/) website.
-pub async fn fetch_all_available_models() -> OResult<Vec<String>> {
+pub async fn fetch_all_available_models() -> Result<Vec<String>> {
     let document = get_model_page("").await?;
 
-    let div_repo = Selector::parse("div#repo")?;
-    let ul_selector = Selector::parse(r#"ul[role="list"]"#)?;
-    let li_selector = Selector::parse("li")?;
-    let a_selector = Selector::parse("a")?;
+    let div_repo = create_selector("div#repo")?;
+    let ul_selector = create_selector(r#"ul[role="list"]"#)?;
+    let li_selector = create_selector("li")?;
+    let a_selector = create_selector("a")?;
 
     let div = document
         .select(&div_repo)
         .next()
-        .ok_or("element div[id=repo] not found")?;
+        .ok_or("element div[id=repo] not found")
+        .map_err(|e| anyhow!(format!("{e}")))?;
     let ul = div
         .select(&ul_selector)
         .next()
-        .ok_or("ul list element not found")?;
+        .ok_or("ul list element not found")
+        .map_err(|e| anyhow!(format!("{e}")))?;
 
     let lines: Vec<_> = ul
         .select(&li_selector)
@@ -55,13 +60,11 @@ pub async fn fetch_all_available_models() -> OResult<Vec<String>> {
 }
 
 /// if the model exist returns the corresponding page, otherwise returns ***error not found*** !!
-pub async fn get_model_page(model_name: &str) -> OResult<Html> {
+pub async fn get_model_page(model_name: &str) -> Result<Html> {
     let url = Url::parse("https://ollama.com/library/")?.join(model_name)?;
     let response = CLIENT.get(url).send().await?;
     if !response.status().is_success() {
-        return Err(Box::new(ModelNotFound(format!(
-            "model : {model_name} not found"
-        ))));
+        return Err(ModelNotFound(format!("model : {model_name} not found")).into());
     }
     Ok(Html::parse_document(&response.text().await?))
 }
@@ -73,7 +76,7 @@ pub async fn get_model_page(model_name: &str) -> OResult<Html> {
 /// ```ignore
 /// let model_info = fetch_model_info("deepseek-r1");
 /// ```
-pub async fn fetch_model_info(model_name: &str) -> OResult<Model> {
+pub async fn fetch_model_info(model_name: &str) -> Result<Model> {
     let model_page = get_model_page(model_name).await?;
     let summary = get_summary_content(&model_page).unwrap_or("".to_owned());
     let category = get_category(&model_page).unwrap_or(Category::Other);
@@ -90,6 +93,6 @@ pub async fn fetch_model_info(model_name: &str) -> OResult<Model> {
         .build())
 }
 /// quick method that returns the serialized of the model to JSON format!!
-pub fn convert_to_json<T: Serialize>(model: &T) -> OResult<String> {
+pub fn convert_to_json<T: Serialize>(model: &T) -> Result<String> {
     Ok(to_string_pretty(&model)?)
 }
