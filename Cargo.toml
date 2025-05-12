@@ -1,6 +1,6 @@
 [package]
 name = "ollama_models_info_fetcher"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Allawiii <alighraibeh87@gmail.com>"]
 license = "MIT"

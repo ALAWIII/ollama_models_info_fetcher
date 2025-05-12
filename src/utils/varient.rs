@@ -1,23 +1,18 @@
 //! fetching the tags or varients available of a given model and their acutal sizes.
-use regex::Regex;
 
 use crate::{anyhow, create_selector, Result, Varient};
 use scraper::Html;
 
 pub(super) fn get_varient(page: Html, n_tags: usize) -> Result<Vec<Varient>> {
-    let size_regex = Regex::new(r"(\d+(\.\d+)?(GB|MB|KB))").unwrap();
     let main_s = create_selector("main")?;
     let section = create_selector("section")?;
-
-    let list_div = create_selector(r#"div.min-w-full.divide-y.divide-gray-200"#)?;
-    //let div = Selector::parse("div")?;
-
-    let tag_div =
-        create_selector(r#"div.break-all.font-medium.text-gray-900.group-hover\:underline"#)?;
-    let size_div =
-        create_selector(r#"div.flex.items-baseline.space-x-1.text-\[13px\].text-neutral-500"#)?;
-    let span_size_div = create_selector("span.font-mono")?;
-
+    let ul = create_selector("ul")?;
+    // get all li in iterator
+    let div_t_s = create_selector(r#"div.flex.flex-col.space-y-\[6px\].col-span-12"#)?;
+    let a = create_selector("a")?;
+    let div_s = create_selector("div.grid.grid-cols-12.text-neutral-500.text-sm.items-center")?;
+    let li = create_selector("li")?;
+    let general_div = create_selector("div")?;
     let tags = page
         .select(&main_s)
         .next()
@@ -27,61 +22,35 @@ pub(super) fn get_varient(page: Html, n_tags: usize) -> Result<Vec<Varient>> {
         .next()
         .ok_or("Failed to get section element!")
         .map_err(|e| anyhow!(format!("{e}")))? // successfully getting the section element
-        .select(&list_div)
+        .select(&ul)
         .next()
-        .ok_or("Failed to get the list of divs!")
-        .map_err(|e| anyhow!(format!("{e}")))?;
-    let token_sizes = tags
-        .select(&tag_div)
-        .take(n_tags)
-        .map(|t| -> Result<String> {
-            Ok(t.first_child()
-                .ok_or("Failed to get the tag child!")
-                .map_err(|e| anyhow!(format!("{e}")))?
-                .value()
-                .as_text()
-                .ok_or("Failed to get the text of tag!")
-                .map_err(|e| anyhow!(format!("{e}")))?
-                .to_string()
-                .trim()
-                .to_string())
+        .ok_or("failed to get the ul element")
+        .map_err(|e| anyhow!(format!("{e}")))?
+        .select(&li)
+        .take(n_tags);
+    let token_sizes: Vec<_> = tags
+        .clone()
+        .filter_map(|l| l.select(&a).next())
+        .map(|a| {
+            a.attr("href")
+                .unwrap()
+                .split(":")
+                .last()
+                .unwrap()
+                .to_owned()
         })
-        .filter_map(Result::ok)
-        .collect::<Vec<String>>();
-    let size = tags
-        .select(&size_div)
-        .take(n_tags)
-        .map(|t| -> Result<String> {
-            let t_size = t
-                .select(&span_size_div)
-                .next()
-                .ok_or("Failed to get the span!")
-                .map_err(|e| anyhow!(format!("{e}")))?
-                .next_sibling()
-                .ok_or("Failed to get the size in GB!")
-                .map_err(|e| anyhow!(format!("{e}")))?
-                .value()
-                .as_text()
-                .ok_or("Failed to get the text of size!")
-                .map_err(|e| anyhow!(format!("{e}")))?
-                .to_string();
-
-            Ok(size_regex
-                .captures(&t_size)
-                .ok_or("Failed to extract the size!")
-                .map_err(|e| anyhow!(format!("{e}")))?
-                .get(1)
-                .ok_or("Failed to get the value of size!")
-                .map_err(|e| anyhow!(format!("{e}")))?
-                .as_str()
-                .to_string())
-        })
-        .filter_map(Result::ok)
-        .collect::<Vec<String>>();
+        .collect();
+    let size: Vec<_> = tags
+        .filter_map(|l| l.select(&div_t_s).next()) // fetches the outer div
+        .filter_map(|d| d.select(&div_s).next()) // fetches the second inner one
+        .filter_map(|d| d.select(&general_div).next()) // fetches the first one
+        .filter_map(|d| d.select(&general_div).nth(1)) // get the div that contains the text!
+        .map(|t| t.first_child().unwrap().value().as_text().unwrap().trim())
+        .collect();
     let varients = token_sizes
         .into_iter()
         .zip(size)
-        .map(|(t, s)| Varient::new(&t, &s))
+        .map(|(t, s)| Varient::new(&t, s))
         .collect::<Vec<Varient>>();
 
     Ok(varients)
@@ -115,7 +84,8 @@ mod varient_test {
 
     #[tokio::test]
     async fn test_get_var2() -> Result<()> {
-        let page = get_model_page("qwen2.5/tags").await?;
+        let page = get_model_page("gemma3/tags").await?;
+
         let tags = get_varient(page, 10)?;
         dbg!(tags);
 

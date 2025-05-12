@@ -38,6 +38,6 @@ mod utils;
 use scraper::Selector;
 pub use utils::*;
 
-pub(crate) fn create_selector(selector_name: &str) -> Result<Selector> {
+pub fn create_selector(selector_name: &str) -> Result<Selector> {
     Selector::parse(selector_name).map_err(|e| anyhow!(format!("Selector parse error: {e}")))
 }
